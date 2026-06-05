@@ -18,7 +18,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 son_mesaj_zamani = time.time()
 # 2 saat (7200 sn) ile 4 saat (14400 sn) arası rastgele bir süre seçen fonksiyon
 def rastgele_sure_sec():
-    return random.randint(7200, 14400)
+    return random.randint(21600, 43200)
 
 BEKLEME_SURESI = rastgele_sure_sec()
 
@@ -48,12 +48,20 @@ async def on_ready():
 async def on_message(message):
     global son_mesaj_zamani
     
+    # Bot kendi mesajlarına cevap veya kalp atmasın
     if message.author == bot.user:
         return
 
+    # Sadece hedef kanaldaki mesajları dinle
     if message.channel.id == HEDEF_KANAL_ID:
         son_mesaj_zamani = time.time()
         print("Yeni bir mesaj geldi, kronometre sıfırlandı.")
+        
+        # Kullanıcının mesajına kalp emojisi bırak
+        try:
+            await message.add_reaction("❤️")
+        except Exception as e:
+            print(f"Kalp eklenirken hata oluştu: {e}")
 
     await bot.process_commands(message)
 
