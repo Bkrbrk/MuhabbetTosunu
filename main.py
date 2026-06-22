@@ -5,90 +5,102 @@ import time
 import json
 from keep_alive import keep_alive
 
-# Gerekli ID'ler ve Token
 TOKEN = 'MTUxMjUyNzU2NjQyOTM2MDM0MA.GCkvRw.qwJa78vv5NMRbUTkRjg1FOdiCMyxE6QmG0dYMI'
-HEDEF_KANAL_ID = 1512531847207194866 # Kanala sağ tıklayıp "ID'yi Kopyala" de
-PING_ROL_ID = 1512532272207626250 # Etiketlenecek role sağ tıklayıp "ID'yi Kopyala" de
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Zamanlayıcı ve Soru Havuzu Değişkenleri
-son_mesaj_zamani = time.time()
-# 2 saat (7200 sn) ile 4 saat (14400 sn) arası rastgele bir süre seçen fonksiyon
+# 6 saat (21600 sn) ile 12 saat (43200 sn) arası
 def rastgele_sure_sec():
     return random.randint(21600, 43200)
 
-BEKLEME_SURESI = rastgele_sure_sec()
+# İKİ SUNUCU İÇİN BASİT AYAR BLOKU
+hedefler = {
+    # 1. SUNUCU (Senin Sunucun)
+    1512531847207194866: { # BURAYA KENDİ KANAL ID'Nİ YAZ
+        "rol_id": 1512532272207626250, # BURAYA KENDİ ROL ID'Nİ YAZ
+        "son_mesaj": time.time(),
+        "bekleme": rastgele_sure_sec()
+    },
+    
+    # 2. SUNUCU (Arkadaşının Sunucusu)
+    1499847917819793489: { # BURAYA ARKADAŞININ KANAL ID'SİNİ YAZ
+        "rol_id": 1518556511901847683, # BURAYA ARKADAŞININ ROL ID'SİNİ YAZ
+        "son_mesaj": time.time(),
+        "bekleme": rastgele_sure_sec()
+    }
+}
 
 tum_sorular = []
 kalan_sorular = []
 
-# JSON dosyasından soruları güvenli bir şekilde yükleyen fonksiyon
 def sorulari_yukle():
     global tum_sorular, kalan_sorular
     try:
         with open('sorular.json', 'r', encoding='utf-8') as f:
             tum_sorular = json.load(f)
-            kalan_sorular = tum_sorular.copy() # Soruları korumak için kopyasını oluşturuyoruz
-            print(f"Başarıyla {len(tum_sorular)} adet soru havuzdan yüklendi!")
-    except FileNotFoundError:
-        print("HATA: 'sorular.json' dosyası bulunamadı! Lütfen dosyanın adını kontrol edin.")
-    except json.JSONDecodeError:
-        print("HATA: 'sorular.json' dosyasının formatı hatalı! Virgülleri veya tırnakları kontrol edin.")
+            kalan_sorular = tum_sorular.copy()
+    except Exception as e:
+        print(f"Hata: {e}")
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} olarak giriş yapıldı!')
-    sorulari_yukle() # Bot açılırken soruları yükle
+    print(f'{bot.user} olarak giriş yapıldı! İki sunucu dinleniyor.')
+    sorulari_yukle()
     zaman_kontrol_dongusu.start()
 
 @bot.event
 async def on_message(message):
-    global son_mesaj_zamani
-    
-    # Bot kendi mesajlarına cevap veya kalp atmasın
     if message.author == bot.user:
         return
 
-    # Sadece hedef kanaldaki mesajları dinle
-    if message.channel.id == HEDEF_KANAL_ID:
-        son_mesaj_zamani = time.time()
-        print("Yeni bir mesaj geldi, kronometre sıfırlandı.")
+    kanal_id = message.channel.id
+    
+    # Mesaj bizim dinlediğimiz o 2 kanaldan birine geldiyse
+    if kanal_id in hedefler:
+        # Sadece o kanalın kronometresini sıfırla
+        hedefler[kanal_id]["son_mesaj"] = time.time()
+        print(f"Mesaj geldi, {kanal_id} kanalının kronometresi sıfırlandı.")
         
-        # Kullanıcının mesajına kalp emojisi bırak
+        # Mesaja kalp at
         try:
             await message.add_reaction("❤️")
-        except Exception as e:
-            print(f"Kalp eklenirken hata oluştu: {e}")
+        except:
+            pass
 
     await bot.process_commands(message)
 
-@tasks.loop(seconds=10) # Döngü her 10 saniyede bir kontrol etmeye devam etsin
+@tasks.loop(seconds=60)
 async def zaman_kontrol_dongusu():
-    global son_mesaj_zamani, kalan_sorular, BEKLEME_SURESI
-    
+    global kalan_sorular
     su_an = time.time()
-    gecen_sure = su_an - son_mesaj_zamani
     
-    if gecen_sure >= BEKLEME_SURESI:
-        kanal = bot.get_channel(HEDEF_KANAL_ID)
+    # İki kanalı da sırayla kontrol et
+    for kanal_id, ayarlar in hedefler.items():
+        gecen_sure = su_an - ayarlar["son_mesaj"]
         
-        if not kalan_sorular:
-            print("Havuzdaki tüm sorular bitti. Yenileniyor...")
-            kalan_sorular = tum_sorular.copy()
+        if gecen_sure >= ayarlar["bekleme"]:
+            kanal = bot.get_channel(kanal_id)
+            if kanal is None:
+                continue
+                
+            if not kalan_sorular:
+                kalan_sorular = tum_sorular.copy()
+                
+            secilen_soru = random.choice(kalan_sorular)
+            kalan_sorular.remove(secilen_soru)
             
-        secilen_soru = random.choice(kalan_sorular)
-        kalan_sorular.remove(secilen_soru)
-        
-        mesaj_metni = f"<@&{PING_ROL_ID}> Ortam biraz sessizleşmiş... Gelin biraz beyin fırtınası yapalım!\n\n**{secilen_soru}**\n\n*(Lütfen birbirimizin fikirlerine saygı göstererek tartışalım 💡)*"
-        
-        await kanal.send(mesaj_metni)
-        
-        # Soru sorulduktan sonra kronometreyi sıfırla ve YENİ BİR RASTGELE SÜRE belirle
-        son_mesaj_zamani = time.time()
-        BEKLEME_SURESI = rastgele_sure_sec()
-# Web sunucusunu ve botu başlat
+            mesaj_metni = f"<@&{ayarlar['rol_id']}> Ortam biraz sessizleşmiş... Gelin biraz beyin fırtınası yapalım!\n\n**{secilen_soru}**\n\n*(Lütfen birbirimizin fikirlerine saygı göstererek tartışalım 💡)*"
+            
+            try:
+                await kanal.send(mesaj_metni)
+            except:
+                pass
+            
+            # Soru sorduktan sonra o kanalın kronometresini yeniden başlat
+            ayarlar["son_mesaj"] = time.time()
+            ayarlar["bekleme"] = rastgele_sure_sec()
+
 keep_alive()
 bot.run(TOKEN)
