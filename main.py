@@ -21,6 +21,7 @@ hedefler = {
     1512531847207194866: { # BURAYA KENDİ KANAL ID'Nİ YAZ
         "rol_id": 1512532272207626250, # BURAYA KENDİ ROL ID'Nİ YAZ
         "son_mesaj": time.time(),
+        "kalp_atsin": True,
         "bekleme": rastgele_sure_sec()
     },
     
@@ -28,6 +29,7 @@ hedefler = {
     1499847917819793489: { # BURAYA ARKADAŞININ KANAL ID'SİNİ YAZ
         "rol_id": 1518556511901847683, # BURAYA ARKADAŞININ ROL ID'SİNİ YAZ
         "son_mesaj": time.time(),
+        "kalp_atsin": False,
         "bekleme": rastgele_sure_sec()
     }
 }
@@ -59,15 +61,16 @@ async def on_message(message):
     
     # Mesaj bizim dinlediğimiz o 2 kanaldan birine geldiyse
     if kanal_id in hedefler:
-        # Sadece o kanalın kronometresini sıfırla
+        # O kanalın kronometresini sıfırla
         hedefler[kanal_id]["son_mesaj"] = time.time()
         print(f"Mesaj geldi, {kanal_id} kanalının kronometresi sıfırlandı.")
         
-        # Mesaja kalp at
-        try:
-            await message.add_reaction("❤️")
-        except:
-            pass
+        # SADECE AYARLARDA 'kalp_atsin' TRUE İSE KALP AT
+        if hedefler[kanal_id].get("kalp_atsin", False):
+            try:
+                await message.add_reaction("❤️")
+            except:
+                pass
 
     await bot.process_commands(message)
 
