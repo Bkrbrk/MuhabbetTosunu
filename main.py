@@ -5,7 +5,7 @@ import time
 import json
 from keep_alive import keep_alive
 
-TOKEN = 'MTUxMjUyNzU2NjQyOTM2MDM0MA.GCkvRw.qwJa78vv5NMRbUTkRjg1FOdiCMyxE6QmG0dYMI'
+TOKEN = ''
 
 intents = discord.Intents.default()
 intents.message_content = True
