@@ -18,16 +18,16 @@ def rastgele_sure_sec():
 # İKİ SUNUCU İÇİN BASİT AYAR BLOKU
 hedefler = {
     # 1. SUNUCU (Senin Sunucun)
-    1512531847207194866: { # BURAYA KENDİ KANAL ID'Nİ YAZ
-        "rol_id": 1512532272207626250, # BURAYA KENDİ ROL ID'Nİ YAZ
+    : { # BURAYA KENDİ KANAL ID'Nİ YAZ
+        "rol_id": , # BURAYA KENDİ ROL ID'Nİ YAZ
         "son_mesaj": time.time(),
         "kalp_atsin": True,
         "bekleme": rastgele_sure_sec()
     },
     
     # 2. SUNUCU (Arkadaşının Sunucusu)
-    1499847917819793489: { # BURAYA ARKADAŞININ KANAL ID'SİNİ YAZ
-        "rol_id": 1518556511901847683, # BURAYA ARKADAŞININ ROL ID'SİNİ YAZ
+    : { # BURAYA ARKADAŞININ KANAL ID'SİNİ YAZ
+        "rol_id": , # BURAYA ARKADAŞININ ROL ID'SİNİ YAZ
         "son_mesaj": time.time(),
         "kalp_atsin": False,
         "bekleme": rastgele_sure_sec()
